@@ -17,7 +17,7 @@ An interactive macroeconomic dashboard analyzing the relationship between Federa
 - Data sourced from FRED and BLS
 
 ## Key Insight
-Monetary policy cannot be evaluated in isolation — the dashboard demonstrates how inflation, labor markets, and policy rules interact dynamically across economic cycles.
+Monetary policy cannot be evaluated in isolation, the dashboard demonstrates how inflation, labor markets, and policy rules interact dynamically across economic cycles.
 
 ## How to Use
 Download the file and open `index.html` in a browser.
