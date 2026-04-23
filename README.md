@@ -6,7 +6,7 @@ A collection of my work in financial analysis, macroeconomics, and investing.
 
 ## Projects
 
-### Microsoft x Activision Blizzard — M&A Analysis
+### Microsoft x Activision Blizzard: M&A Analysis
 Breakdown of Microsoft's $68.7B acquisition, including valuation, strategy, and regulatory challenges.
 
 ### Fed Policy and Inflation Dashboard
