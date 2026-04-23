@@ -1,0 +1,524 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Fed Policy and Inflation Explorer</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Mono:wght@300;400;500&display=swap');
+
+:root {
+  --bg:      #0a0a0f;
+  --surface: #111118;
+  --border:  #1c1c2a;
+  --accent:  #e8c547;
+  --blue:    #5b8dee;
+  --red:     #e05c5c;
+  --green:   #4ecb8d;
+  --text:    #e4e2f0;
+  --muted:   #5e5b72;
+  --gl:      rgba(255,255,255,0.035);
+}
+
+*, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'DM Mono', monospace;
+  font-size: 13px;
+  min-height: 100vh;
+}
+
+body::before {
+  content: '';
+  position: fixed; inset: 0;
+  background-image:
+    linear-gradient(var(--gl) 1px, transparent 1px),
+    linear-gradient(90deg, var(--gl) 1px, transparent 1px);
+  background-size: 48px 48px;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.wrap {
+  position: relative; z-index: 1;
+  max-width: 1080px;
+  margin: 0 auto;
+  padding: 52px 24px 96px;
+}
+
+/* Header */
+.eyebrow {
+  font-size: 10px; letter-spacing: .22em; text-transform: uppercase;
+  color: var(--accent); margin-bottom: 14px;
+}
+h1 {
+  font-family: 'Instrument Serif', serif;
+  font-size: clamp(28px, 4.5vw, 50px);
+  font-weight: 400; line-height: 1.08;
+}
+h1 em { font-style: italic; color: var(--accent); }
+.subtitle {
+  margin-top: 12px; font-size: 11px;
+  color: var(--muted); line-height: 1.8; max-width: 600px;
+}
+header { margin-bottom: 48px; }
+
+/* Stat cards */
+.stats {
+  display: grid; grid-template-columns: repeat(4,1fr);
+  gap: 10px; margin-bottom: 28px;
+}
+@media(max-width:640px){ .stats{ grid-template-columns:1fr 1fr; } }
+
+.stat {
+  background: var(--surface); border: 1px solid var(--border);
+  padding: 16px 18px; position: relative; overflow: hidden;
+}
+.stat::after {
+  content:''; position:absolute; top:0; left:0; right:0; height:2px;
+}
+.stat.y::after { background: var(--accent); }
+.stat.r::after { background: var(--red); }
+.stat.b::after { background: var(--blue); }
+.stat.g::after { background: var(--green); }
+
+.sl { font-size:9px; letter-spacing:.16em; text-transform:uppercase; color:var(--muted); margin-bottom:8px; }
+.sv { font-family:'Instrument Serif',serif; font-size:30px; line-height:1; }
+.stat.y .sv { color:var(--accent); }
+.stat.r .sv { color:var(--red); }
+.stat.b .sv { color:var(--blue); }
+.stat.g .sv { color:var(--green); }
+.ss { font-size:9px; color:var(--muted); margin-top:5px; }
+
+/* Panels */
+.panel {
+  background: var(--surface); border: 1px solid var(--border);
+  padding: 24px 26px; margin-bottom: 14px;
+}
+.ph {
+  display: flex; justify-content: space-between;
+  align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 20px;
+}
+.pt { font-size:10px; letter-spacing:.16em; text-transform:uppercase; color:var(--muted); }
+.leg { display:flex; gap:18px; font-size:10px; color:var(--muted); }
+.li  { display:flex; align-items:center; gap:6px; }
+.ld  { width:8px; height:8px; border-radius:50%; flex-shrink:0; }
+
+.cb { position:relative; width:100%; }
+.cb canvas { display:block; width:100% !important; }
+
+.two-col {
+  display: grid; grid-template-columns: 1fr 1fr;
+  gap: 14px; margin-bottom: 14px;
+}
+@media(max-width:700px){ .two-col{ grid-template-columns:1fr; } }
+
+/* Simulator */
+.sim-desc {
+  font-size:11px; color:var(--muted); line-height:1.75;
+  margin-bottom:24px;
+}
+.controls {
+  display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr));
+  gap:20px; margin-bottom:24px;
+}
+.cg label {
+  display:flex; justify-content:space-between;
+  font-size:11px; color:var(--muted); margin-bottom:8px;
+}
+.cg label span { color:var(--accent); }
+input[type=range] {
+  -webkit-appearance:none; width:100%; height:2px;
+  background:var(--border); outline:none; cursor:pointer;
+}
+input[type=range]::-webkit-slider-thumb {
+  -webkit-appearance:none; width:13px; height:13px;
+  border-radius:50%; background:var(--accent);
+  box-shadow:0 0 10px rgba(232,197,71,.4);
+}
+
+.sres {
+  display:grid; grid-template-columns:repeat(3,1fr); gap:10px;
+}
+.sm { border:1px solid var(--border); padding:14px 16px; }
+.sml { font-size:9px; letter-spacing:.14em; text-transform:uppercase; color:var(--muted); margin-bottom:6px; }
+.smv { font-family:'Instrument Serif',serif; font-size:26px; color:var(--accent); }
+.sv2 {
+  grid-column:1/-1; border:1px solid var(--border); padding:14px 16px;
+}
+.svl { font-size:9px; letter-spacing:.14em; text-transform:uppercase; color:var(--muted); display:block; margin-bottom:5px; }
+.svt { font-size:11px; color:var(--text); line-height:1.8; }
+
+/* Events */
+.ev {
+  display:grid; grid-template-columns:72px 1fr;
+  gap:20px; padding:16px 0; border-bottom:1px solid var(--border);
+}
+.ev:last-child { border-bottom:none; }
+.eyr { font-family:'Instrument Serif',serif; font-size:22px; color:var(--accent); padding-top:2px; }
+.enm { font-size:12px; color:var(--text); margin-bottom:5px; display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+.tag {
+  font-size:8px; letter-spacing:.12em; text-transform:uppercase;
+  padding:2px 7px; border:1px solid; display:inline-block;
+}
+.tag.hawk { color:var(--red); border-color:var(--red); }
+.tag.dove { color:var(--blue); border-color:var(--blue); }
+.tag.crisis { color:var(--accent); border-color:var(--accent); }
+.edc { font-size:11px; color:var(--muted); line-height:1.75; }
+
+footer {
+  margin-top:48px; padding-top:20px;
+  border-top:1px solid var(--border);
+  font-size:10px; color:var(--muted); line-height:1.9;
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="eyebrow">Macroeconomic Research · UCSC Department of Economics · Spring 2026</div>
+    <h1>Federal Reserve Policy<br>and the Dynamics of <em>Inflation</em></h1>
+    <p class="subtitle">An empirical analysis of U.S. monetary policy, the Phillips Curve trade-off, and the Taylor Rule framework, using annual data from 1970 through 2025 sourced from FRED and the Bureau of Labor Statistics.</p>
+  </header>
+
+  <div class="stats">
+    <div class="stat y">
+      <div class="sl">Fed Funds Rate</div>
+      <div class="sv">4.33%</div>
+      <div class="ss">March 2025</div>
+    </div>
+    <div class="stat r">
+      <div class="sl">CPI Inflation</div>
+      <div class="sv">2.8%</div>
+      <div class="ss">February 2025, YoY</div>
+    </div>
+    <div class="stat b">
+      <div class="sl">Unemployment Rate</div>
+      <div class="sv">4.1%</div>
+      <div class="ss">February 2025</div>
+    </div>
+    <div class="stat g">
+      <div class="sl">Inflation Target</div>
+      <div class="sv">2.0%</div>
+      <div class="ss">FOMC long-run goal</div>
+    </div>
+  </div>
+
+  <!-- Main time series -->
+  <div class="panel">
+    <div class="ph">
+      <div class="pt">Figure 1. Federal Funds Rate, CPI Inflation, and Unemployment Rate (1970-2025)</div>
+      <div class="leg">
+        <div class="li"><div class="ld" style="background:var(--accent)"></div>Fed Funds Rate</div>
+        <div class="li"><div class="ld" style="background:var(--red)"></div>CPI Inflation</div>
+        <div class="li"><div class="ld" style="background:var(--blue)"></div>Unemployment</div>
+      </div>
+    </div>
+    <div class="cb" style="height:280px">
+      <canvas id="mainChart"></canvas>
+    </div>
+  </div>
+
+  <div class="two-col">
+    <div class="panel">
+      <div class="ph">
+        <div class="pt">Figure 2. Phillips Curve Scatter Plot (1970-2025)</div>
+        <div class="leg">
+          <div class="li"><div class="ld" style="background:var(--blue)"></div>Earlier</div>
+          <div class="li"><div class="ld" style="background:var(--accent)"></div>Recent</div>
+        </div>
+      </div>
+      <div class="cb" style="height:240px">
+        <canvas id="phillipsChart"></canvas>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="ph">
+        <div class="pt">Figure 3. Rate-Hiking Cycles: Magnitude and Duration</div>
+        <div class="leg">
+          <div class="li"><div class="ld" style="background:var(--accent)"></div>Magnitude (pp)</div>
+          <div class="li"><div class="ld" style="background:var(--blue)"></div>Duration (mo)</div>
+        </div>
+      </div>
+      <div class="cb" style="height:240px">
+        <canvas id="cyclesChart"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- Taylor Rule -->
+  <div class="panel">
+    <div class="ph">
+      <div class="pt">Figure 4. Interactive Taylor Rule Simulator</div>
+    </div>
+    <p class="sim-desc">The Taylor Rule (Taylor, 1993) prescribes: i = r* + pi + 0.5(pi - pi*) + 0.5(output gap). Adjust the parameters below to evaluate whether current Federal Reserve policy is consistent with the rule under various macroeconomic assumptions. The current federal funds rate is 4.33%.</p>
+    <div class="controls">
+      <div class="cg">
+        <label>Current Inflation (pi) <span id="vi">3.5%</span></label>
+        <input type="range" id="si" min="0" max="12" step="0.1" value="3.5">
+      </div>
+      <div class="cg">
+        <label>Output Gap (y - y-bar) <span id="vg">+0.0%</span></label>
+        <input type="range" id="sg" min="-5" max="5" step="0.1" value="0">
+      </div>
+      <div class="cg">
+        <label>Inflation Target (pi*) <span id="vt">2.0%</span></label>
+        <input type="range" id="st" min="1" max="4" step="0.5" value="2">
+      </div>
+      <div class="cg">
+        <label>Neutral Real Rate (r*) <span id="vr">0.50%</span></label>
+        <input type="range" id="sr" min="0" max="3" step="0.25" value="0.5">
+      </div>
+    </div>
+    <div class="sres">
+      <div class="sm">
+        <div class="sml">Taylor Rule Prescription</div>
+        <div class="smv" id="orate">--</div>
+      </div>
+      <div class="sm">
+        <div class="sml">Deviation from Current Rate</div>
+        <div class="smv" id="ogap">--</div>
+      </div>
+      <div class="sm">
+        <div class="sml">Policy Assessment</div>
+        <div class="smv" id="ostance" style="font-size:16px;padding-top:4px;line-height:1.3">--</div>
+      </div>
+      <div class="sv2">
+        <span class="svl">Analytical Summary</span>
+        <span class="svt" id="otext">Adjust the sliders above to generate a policy assessment.</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Historical episodes -->
+  <div class="panel">
+    <div class="ph">
+      <div class="pt">Key Monetary Policy Episodes, 1979-2023</div>
+    </div>
+    <div class="ev">
+      <div class="eyr">1979</div>
+      <div>
+        <div class="enm"><span class="tag hawk">Contractionary</span>The Volcker Disinflation</div>
+        <div class="edc">Fed Chair Paul Volcker raised the federal funds rate above 20 percent to eliminate entrenched double-digit inflation expectations. The resulting contraction drove unemployment to approximately 10.8 percent by late 1982. The policy succeeded in permanently re-anchoring long-run inflation expectations and restoring the credibility the Federal Reserve had lost during the preceding decade of accommodative policy.</div>
+      </div>
+    </div>
+    <div class="ev">
+      <div class="eyr">2001</div>
+      <div>
+        <div class="enm"><span class="tag dove">Expansionary</span>Post-Dot-Com Easing Cycle</div>
+        <div class="edc">Following the collapse of technology asset valuations and the economic disruption of September 2001, the Fed reduced the federal funds rate to 1.0 percent and maintained an accommodative stance through 2004. Subsequent analysis, including Taylor (2009), identified this period as one in which the actual rate fell materially below Taylor Rule prescriptions, contributing to the credit expansion that preceded the 2008 financial crisis.</div>
+      </div>
+    </div>
+    <div class="ev">
+      <div class="eyr">2008</div>
+      <div>
+        <div class="enm"><span class="tag crisis">Zero Lower Bound</span>Financial Crisis and Quantitative Easing</div>
+        <div class="edc">The Global Financial Crisis drove the FOMC to cut the federal funds rate to the 0 to 0.25 percent range in December 2008, reaching the zero lower bound for the first time in the modern era. With conventional rate policy exhausted, the Fed introduced Quantitative Easing, purchasing mortgage-backed securities and Treasury securities to compress longer-term yields and provide additional monetary accommodation through balance sheet expansion.</div>
+      </div>
+    </div>
+    <div class="ev">
+      <div class="eyr">2022</div>
+      <div>
+        <div class="enm"><span class="tag hawk">Contractionary</span>Post-COVID Tightening Cycle</div>
+        <div class="edc">CPI inflation reached 9.1 percent in June 2022, driven by pandemic-era supply-chain disruptions and fiscal expansion. The Federal Reserve executed 525 basis points of cumulative rate increases across eleven consecutive FOMC meetings, the most aggressive tightening sequence in four decades. Disinflation was achieved without a recession, a substantially better outcome than the Volcker episode, attributable in part to the credibility the institution had accumulated over the intervening period.</div>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    Data sources: Federal Reserve Economic Data (FRED), Board of Governors of the Federal Reserve System; Bureau of Labor Statistics, U.S. Department of Labor; Bureau of Economic Analysis, U.S. Department of Commerce.<br>
+    Annual averages are used throughout. Historical figures reflect published source data and are representative of cited series.<br>
+    Ethan Suker · Department of Economics, University of California, Santa Cruz · Spring 2026
+  </footer>
+
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script>
+// ── Data ─────────────────────────────────────────────────────────────────────
+const YR = [
+  1970,1971,1972,1973,1974,1975,1976,1977,1978,1979,
+  1980,1981,1982,1983,1984,1985,1986,1987,1988,1989,
+  1990,1991,1992,1993,1994,1995,1996,1997,1998,1999,
+  2000,2001,2002,2003,2004,2005,2006,2007,2008,2009,
+  2010,2011,2012,2013,2014,2015,2016,2017,2018,2019,
+  2020,2021,2022,2023,2024
+];
+const FED = [
+  7.2,5.2,4.4,8.7,10.5,5.8,5.0,5.5,7.9,11.2,
+  13.4,16.4,12.2,9.1,10.2,8.1,6.8,6.7,7.6,9.2,
+  8.1,5.7,3.5,3.0,4.2,5.8,5.3,5.5,5.4,5.3,
+  6.5,3.9,1.7,1.1,1.4,3.2,5.0,5.0,2.0,0.25,
+  0.2,0.1,0.1,0.1,0.1,0.15,0.4,1.0,1.8,2.4,
+  0.4,0.1,1.7,5.0,4.6
+];
+const INF = [
+  5.7,4.4,3.2,6.2,11.0,9.1,5.8,6.5,7.6,11.3,
+  13.5,10.3,6.2,3.2,4.3,3.6,1.9,3.7,4.1,4.8,
+  5.4,4.2,3.0,3.0,2.6,2.8,3.0,2.3,1.6,2.2,
+  3.4,2.8,1.6,2.3,2.7,3.4,3.2,2.9,3.8,-0.4,
+  1.6,3.2,2.1,1.5,1.6,0.1,1.3,2.1,2.4,1.8,
+  1.2,4.7,8.0,4.1,2.9
+];
+const UNE = [
+  4.9,5.9,5.6,4.9,5.6,8.5,7.7,7.1,6.1,5.9,
+  7.1,7.6,9.7,9.6,7.5,7.2,7.0,6.2,5.5,5.3,
+  5.6,6.8,7.5,6.9,6.1,5.6,5.4,4.9,4.5,4.2,
+  4.0,4.7,5.8,6.0,5.5,5.1,4.6,4.6,5.8,9.3,
+  9.6,8.9,8.1,7.4,6.2,5.3,4.9,4.4,3.9,3.7,
+  8.1,5.4,3.7,3.6,4.0
+];
+
+// ── Chart defaults ────────────────────────────────────────────────────────────
+Chart.defaults.color = '#5e5b72';
+Chart.defaults.font.family = "'DM Mono', monospace";
+Chart.defaults.font.size = 10;
+
+const GL = 'rgba(255,255,255,0.04)';
+const TT = {
+  backgroundColor: '#111118', borderColor: '#1c1c2a', borderWidth: 1,
+  padding: 10,
+  titleFont: { family: "'DM Mono', monospace", size: 10 },
+  bodyFont:  { family: "'DM Mono', monospace", size: 10 },
+};
+
+// ── Figure 1: Time series ─────────────────────────────────────────────────────
+new Chart(document.getElementById('mainChart'), {
+  type: 'line',
+  data: {
+    labels: YR,
+    datasets: [
+      { label: 'Fed Funds Rate', data: FED,  borderColor:'#e8c547', borderWidth:2,   pointRadius:0, tension:0.35 },
+      { label: 'CPI Inflation',  data: INF,  borderColor:'#e05c5c', borderWidth:1.5, pointRadius:0, tension:0.35, borderDash:[5,3] },
+      { label: 'Unemployment',   data: UNE,  borderColor:'#5b8dee', borderWidth:1.5, pointRadius:0, tension:0.35, borderDash:[2,4] },
+    ]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    interaction: { mode:'index', intersect:false },
+    plugins: {
+      legend: { display:false },
+      tooltip: { ...TT, callbacks: { label: c => ` ${c.dataset.label}: ${c.parsed.y.toFixed(1)}%` } }
+    },
+    scales: {
+      x: { grid:{ color:GL }, ticks:{ maxTicksLimit:12 } },
+      y: { grid:{ color:GL }, ticks:{ callback: v => v+'%' } }
+    }
+  }
+});
+
+// ── Figure 2: Phillips Curve ──────────────────────────────────────────────────
+const pp = YR.map((yr,i) => ({ x: UNE[i], y: INF[i], yr }));
+
+new Chart(document.getElementById('phillipsChart'), {
+  type: 'scatter',
+  data: {
+    datasets: [{
+      data: pp,
+      backgroundColor: pp.map((_,i) => {
+        const t = i / (pp.length - 1);
+        const r = Math.round(91  + t*(232-91));
+        const g = Math.round(141 + t*(197-141));
+        const b = Math.round(238 + t*(71-238));
+        return `rgba(${r},${g},${b},0.75)`;
+      }),
+      pointRadius: 4.5,
+    }]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: {
+      legend: { display:false },
+      tooltip: { ...TT, callbacks: { label: c => ` ${c.raw.yr}: u=${c.raw.x.toFixed(1)}%  pi=${c.raw.y.toFixed(1)}%` } }
+    },
+    scales: {
+      x: { title:{ display:true, text:'Unemployment Rate (%)', color:'#5e5b72' }, grid:{ color:GL }, ticks:{ callback: v => v+'%' } },
+      y: { title:{ display:true, text:'CPI Inflation Rate (%)', color:'#5e5b72' }, grid:{ color:GL }, ticks:{ callback: v => v+'%' } }
+    }
+  }
+});
+
+// ── Figure 3: Rate hike cycles ────────────────────────────────────────────────
+new Chart(document.getElementById('cyclesChart'), {
+  type: 'bar',
+  data: {
+    labels: ["1977-80","1986-89","1994-95","1999-00","2004-06","2015-18","2022-23"],
+    datasets: [
+      {
+        label: 'Magnitude (pp)',
+        data: [6.5,3.3,3.0,1.75,4.25,2.25,5.25],
+        backgroundColor:'rgba(232,197,71,0.65)', borderColor:'#e8c547', borderWidth:1,
+        yAxisID:'y',
+      },
+      {
+        label: 'Duration (months)',
+        data: [30,24,12,12,24,36,16],
+        type:'line', borderColor:'#5b8dee',
+        backgroundColor:'rgba(91,141,238,0.12)',
+        borderWidth:2, pointRadius:5, pointBackgroundColor:'#5b8dee',
+        tension:0.3, yAxisID:'y2',
+      }
+    ]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: { legend:{ display:false }, tooltip:{ ...TT } },
+    scales: {
+      x:  { grid:{ color:GL } },
+      y:  { grid:{ color:GL }, ticks:{ callback: v => v+'pp' }, position:'left' },
+      y2: { grid:{ display:false }, ticks:{ callback: v => v+'mo' }, position:'right' }
+    }
+  }
+});
+
+// ── Figure 4: Taylor Rule Simulator ──────────────────────────────────────────
+const RATE = 4.33;
+
+function sim() {
+  const pi    = +document.getElementById('si').value;
+  const gap   = +document.getElementById('sg').value;
+  const piStar = +document.getElementById('st').value;
+  const rStar  = +document.getElementById('sr').value;
+
+  document.getElementById('vi').textContent = pi.toFixed(1)+'%';
+  document.getElementById('vg').textContent = (gap>=0?'+':'')+gap.toFixed(1)+'%';
+  document.getElementById('vt').textContent = piStar.toFixed(1)+'%';
+  document.getElementById('vr').textContent = rStar.toFixed(2)+'%';
+
+  const t    = rStar + pi + 0.5*(pi-piStar) + 0.5*gap;
+  const diff = t - RATE;
+
+  document.getElementById('orate').textContent = t.toFixed(2)+'%';
+  document.getElementById('ogap').textContent  = (diff>=0?'+':'')+diff.toFixed(2)+'%';
+
+  const el = document.getElementById('ostance');
+  let txt;
+
+  if (t > RATE + 0.5) {
+    el.textContent  = 'Accommodative';
+    el.style.color  = '#e05c5c';
+    txt = `The Taylor Rule prescribes ${t.toFixed(2)} percent, approximately ${diff.toFixed(2)} percentage points above the current rate of ${RATE} percent. Under these conditions, the existing policy stance is insufficiently restrictive relative to the rule. Tightening would be indicated to prevent inflation from re-accelerating above the target.`;
+  } else if (t < RATE - 0.5) {
+    el.textContent  = 'Restrictive';
+    el.style.color  = '#5b8dee';
+    txt = `The Taylor Rule prescribes ${t.toFixed(2)} percent, approximately ${Math.abs(diff).toFixed(2)} percentage points below the current rate of ${RATE} percent. Current policy is more restrictive than the rule warrants. A downward adjustment would be consistent with the rule under these macroeconomic conditions.`;
+  } else {
+    el.textContent  = 'Consistent';
+    el.style.color  = '#4ecb8d';
+    txt = `The Taylor Rule prescribes ${t.toFixed(2)} percent, broadly consistent with the current federal funds rate of ${RATE} percent. Monetary policy appears well-calibrated under these parameter assumptions; the deviation from the rule-implied rate does not indicate a material misalignment.`;
+  }
+
+  document.getElementById('otext').textContent = txt;
+}
+
+['si','sg','st','sr'].forEach(id =>
+  document.getElementById(id).addEventListener('input', sim)
+);
+sim();
+</script>
+</body>
+</html>
