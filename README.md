@@ -1,6 +1,6 @@
 # Finance Projects Portfolio
 
-A collection of my work in financial analysis, macroeconomics, and investing.
+A collection of my work in financial analysis, economics, and investing.
 
 ---
 
